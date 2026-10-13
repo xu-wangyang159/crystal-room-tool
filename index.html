@@ -267,6 +267,12 @@ const TYPE_CLASS = {
   '其他': 't-other'
 };
 
+// 西安气室编号（显示时加"西安"前缀）
+const XIAN_ROOMS = new Set(["7289","7290","7291","7292","7293","7294","7295","7296","7297","7298","7309","7311","7312","7313","7314","7315","7316","7317","7318","7319","7321","7322","7323","7324","7325","7326","7327","7328","7329","7330","7332","7333","7334","7335","7336","7337","7338","7339","7340","7341","7342","7343","7344","7345","7346","7347","7348","7349","7350","7351","7352","7354","7355","7356","7357","7358","7359","7360","7361","7362","7363","7364","7366","7367","7368","7370","7371","7372","7374","7375","7376","7378","8379","8380","8381","8382","8383","8384","8385","8386","8387","8388","8389","8390","8391","8393","8394","8395","8396","8397","8398","8399","8400","8401","8402","8403","8404","8405","8406","8407","8408","8409","8410","8411","8412","8413","8414","8415","8416","8417","8418","8419","8420","8421","8422","8423","8424","8425","8426","8427","8428","8429","8430","8431","8432","8433","8434","8435","8436","8437","8438","8449","8450","8451","8453","8454","8455","8456","8457","8458","8459","8460","8461","8462","8463","8464","8466","8467","8469","8470","8471","8473","8474","8475","8476","8477","8478"]);
+function isXian(r) { return XIAN_ROOMS.has(String(r).trim().replace(/[（(].*$/, '')); }
+function roomLabel(r) { return isXian(r) ? '西安' + r : r; }
+function normRoom(q) { return String(q).trim().replace(/^西安/, ''); }
+
 function badgeCls(j) {
   if (!j) return 'b-gray';
   if (j.indexOf('不良') >= 0 || j.indexOf('硬故障') >= 0) return 'b-bad';
@@ -305,7 +311,7 @@ document.getElementById('tabs').addEventListener('click', function(e) {
   inp.placeholder = mode === 'crystal' ? '输入晶体编号后回车搜索，例如 4717' : '输入气室编号后回车搜索，例如 8054';
   document.getElementById('hint').innerHTML = mode === 'crystal'
     ? '例：查晶体 <b>4717</b> → 晶体判定 + 所配气室（含 <b>8054</b>）及各判定依据'
-    : '例：查气室 <b>8054</b> → 气室判定 + 使用该气室的晶体及各自判定依据';
+    : '例：查气室 <b>8054</b> 或 <b>西安7289</b> → 气室判定 + 使用该气室的晶体及各自判定依据（西安编号自动加前缀显示）';
   document.getElementById('result').innerHTML = '';
 });
 
@@ -378,7 +384,7 @@ function queryCrystal(q) {
       }).join(' ') || '<span style="color:var(--gray)">—</span>';
       rows += '<tr>'
         + '<td>' + (i+1) + '</td>'
-        + '<td><a class="room-link" data-room="' + esc(r[0]) + '">' + esc(r[0]) + '</a></td>'
+        + '<td><a class="room-link" data-room="' + esc(normRoom(r[0])) + '">' + esc(roomLabel(r[0])) + '</a></td>'
         + '<td>' + (r[1] ? esc(r[1]) : '<span style="color:var(--gray)">—</span>') + '</td>'
         + '<td class="reason">' + esc(r[2] || '—') + '</td>'
         + '<td class="reason">' + esc(r[3] || '—') + '</td>'
@@ -406,6 +412,7 @@ function queryCrystal(q) {
 }
 
 function queryRoom(q) {
+  q = normRoom(q);
   const hit = CR.r[q];
   const box = document.getElementById('result');
   if (!hit) {
@@ -452,7 +459,7 @@ function queryRoom(q) {
   box.innerHTML =
     '<div class="card">'
     + '<div class="res-head">'
-    + '<span class="res-id">' + esc(q) + '</span>'
+    + '<span class="res-id">' + esc(roomLabel(q)) + '</span>'
     + '<span class="res-type">气室编号</span>'
     + '<span class="badge ' + cls + '"><span class="dot"></span>' + esc(judge || '未判定') + '</span>'
     + '<span style="color:var(--ink2);font-size:13px">全表使用 ' + users.length + ' 次</span>'

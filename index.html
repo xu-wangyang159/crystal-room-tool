@@ -423,6 +423,7 @@ function queryRoom(q) {
   const cls = badgeCls(judge);
   let rows = '';
   const seen = {};
+  const recRows = [];
   users.forEach(function(pid) {
     if (seen[pid]) return;
     seen[pid] = 1;
@@ -439,26 +440,35 @@ function queryRoom(q) {
         return '<span class="mini-badge ' + miniBadgeCls(t) + '">' + esc(t) + '×' + cTypeCnt[t] + '</span>';
       }).join(' ');
     }
-    // 该晶体用此气室的每条记录分别展示（同一晶体多次使用时逐条显示，避免看起来重复）
+    // 该晶体用此气室的每条记录分别收集（同一晶体多次使用时逐条列出）
     crecs.forEach(function(r) {
       if (r[0] !== q) return;
-      const reason = r[3];
-      const types = r[5] || [];
-      const pd = r[1] || '';
-      const date = r[2] || '';
-      const ttags = types.map(function(t) {
-        return '<span class="mini-badge ' + miniBadgeCls(t) + '">' + esc(t) + '</span>';
-      }).join(' ') || '<span style="color:var(--gray)">—</span>';
-      rows += '<tr>'
-        + '<td><a class="room-link" data-crystal="' + esc(pid) + '">' + esc(pid) + '</a></td>'
-        + '<td>' + (pd ? esc(pd) : '<span style="color:var(--gray)">—</span>') + '</td>'
-        + '<td>' + (date ? esc(date) : '<span style="color:var(--gray)">—</span>') + '</td>'
-        + '<td class="reason">' + esc(reason || '—') + '</td>'
-        + '<td>' + ttags + '</td>'
-        + '<td>' + cTypesHtml + '</td>'
-        + '<td><span class="mini-badge ' + badgeCls(cj) + '">' + esc(cj || '未判定') + '</span></td>'
-        + '</tr>';
+      recRows.push({
+        pid: pid, cj: cj, cTypesHtml: cTypesHtml,
+        reason: r[3] || '', types: r[5] || [], pd: r[1] || '', date: String(r[2] || '')
+      });
     });
+  });
+  // 按日期从小到大排序（早的在前，空日期排最后）
+  recRows.sort(function(a, b) {
+    if (!a.date && !b.date) return 0;
+    if (!a.date) return 1;
+    if (!b.date) return -1;
+    return a.date.localeCompare(b.date);
+  });
+  recRows.forEach(function(rec) {
+    const ttags = rec.types.map(function(t) {
+      return '<span class="mini-badge ' + miniBadgeCls(t) + '">' + esc(t) + '</span>';
+    }).join(' ') || '<span style="color:var(--gray)">—</span>';
+    rows += '<tr>'
+      + '<td><a class="room-link" data-crystal="' + esc(rec.pid) + '">' + esc(rec.pid) + '</a></td>'
+      + '<td>' + (rec.pd ? esc(rec.pd) : '<span style="color:var(--gray)">—</span>') + '</td>'
+      + '<td>' + (rec.date ? esc(rec.date) : '<span style="color:var(--gray)">—</span>') + '</td>'
+      + '<td class="reason">' + esc(rec.reason || '—') + '</td>'
+      + '<td>' + ttags + '</td>'
+      + '<td>' + rec.cTypesHtml + '</td>'
+      + '<td><span class="mini-badge ' + badgeCls(rec.cj) + '">' + esc(rec.cj || '未判定') + '</span></td>'
+      + '</tr>';
   });
 
   box.innerHTML =

@@ -422,16 +422,12 @@ function queryRoom(q) {
   const judge = hit[0], users = hit[1], typeCnt = hit[2] || {};
   const cls = badgeCls(judge);
   let rows = '';
+  const seen = {};
   users.forEach(function(pid) {
+    if (seen[pid]) return;
+    seen[pid] = 1;
     const cj = CR.c[pid] ? CR.c[pid][0] : null;
     const crecs = CR.c[pid] ? CR.c[pid][1] : [];
-    // 该晶体用此气室的原因
-    let reason = '';
-    let types = [];
-    let pd = '';
-    crecs.forEach(function(r) {
-      if (r[0] === q) { reason = r[3]; types = r[5] || []; pd = r[1] || ''; }
-    });
     // 该晶体全部更换记录的故障类型分布（判断晶体不良主因）
     const cTypeCnt = {};
     crecs.forEach(function(r) {
@@ -443,17 +439,26 @@ function queryRoom(q) {
         return '<span class="mini-badge ' + miniBadgeCls(t) + '">' + esc(t) + '×' + cTypeCnt[t] + '</span>';
       }).join(' ');
     }
-    const ttags = types.map(function(t) {
-      return '<span class="mini-badge ' + miniBadgeCls(t) + '">' + esc(t) + '</span>';
-    }).join(' ') || '<span style="color:var(--gray)">—</span>';
-    rows += '<tr>'
-      + '<td><a class="room-link" data-crystal="' + esc(pid) + '">' + esc(pid) + '</a></td>'
-      + '<td>' + (pd ? esc(pd) : '<span style="color:var(--gray)">—</span>') + '</td>'
-      + '<td class="reason">' + esc(reason || '—') + '</td>'
-      + '<td>' + ttags + '</td>'
-      + '<td>' + cTypesHtml + '</td>'
-      + '<td><span class="mini-badge ' + badgeCls(cj) + '">' + esc(cj || '未判定') + '</span></td>'
-      + '</tr>';
+    // 该晶体用此气室的每条记录分别展示（同一晶体多次使用时逐条显示，避免看起来重复）
+    crecs.forEach(function(r) {
+      if (r[0] !== q) return;
+      const reason = r[3];
+      const types = r[5] || [];
+      const pd = r[1] || '';
+      const date = r[2] || '';
+      const ttags = types.map(function(t) {
+        return '<span class="mini-badge ' + miniBadgeCls(t) + '">' + esc(t) + '</span>';
+      }).join(' ') || '<span style="color:var(--gray)">—</span>';
+      rows += '<tr>'
+        + '<td><a class="room-link" data-crystal="' + esc(pid) + '">' + esc(pid) + '</a></td>'
+        + '<td>' + (pd ? esc(pd) : '<span style="color:var(--gray)">—</span>') + '</td>'
+        + '<td>' + (date ? esc(date) : '<span style="color:var(--gray)">—</span>') + '</td>'
+        + '<td class="reason">' + esc(reason || '—') + '</td>'
+        + '<td>' + ttags + '</td>'
+        + '<td>' + cTypesHtml + '</td>'
+        + '<td><span class="mini-badge ' + badgeCls(cj) + '">' + esc(cj || '未判定') + '</span></td>'
+        + '</tr>';
+    });
   });
 
   box.innerHTML =
@@ -469,7 +474,7 @@ function queryRoom(q) {
     + typeTagsWithDesc(typeCnt)
     + '</div>'
     + '<div class="sec-title">使用该气室的晶体明细</div>'
-    + '<table><tr><th>晶体编号</th><th>PD值</th><th>更换原因</th><th>故障类型</th><th>晶体故障分布</th><th>晶体判定</th></tr>' + rows + '</table>'
+    + '<table><tr><th>晶体编号</th><th>PD值</th><th>日期</th><th>更换原因</th><th>故障类型</th><th>晶体故障分布</th><th>晶体判定</th></tr>' + rows + '</table>'
     + '</div>';
   bindCrystalLinks();
 }

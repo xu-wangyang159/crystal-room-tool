@@ -449,11 +449,11 @@ function queryRoom(q) {
       });
     });
   });
-  // 按日期从小到大排序（早的在前，空日期排最后）
+  // 按日期排序：空日期排前面，其余按日期从小到大
   recRows.sort(function(a, b) {
     if (!a.date && !b.date) return 0;
-    if (!a.date) return 1;
-    if (!b.date) return -1;
+    if (!a.date) return -1;
+    if (!b.date) return 1;
     return a.date.localeCompare(b.date);
   });
   recRows.forEach(function(rec) {

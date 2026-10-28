@@ -289,7 +289,7 @@
   <div id="view-entry" style="display:none">
     <div class="card">
       <div class="res-head"><span class="res-type">登记出入记录</span>
-        <span style="color:var(--ink2);font-size:12px">出货 = 生产部 → 测试部/仓库；退回 = 测试部/仓库 → 生产部</span></div>
+        <span style="color:var(--ink2);font-size:12px">测试 = 生产部 → 测试部/仓库；返回 = 测试部/仓库 → 生产部</span></div>
       <div class="lform" style="margin-top:14px">
         <div class="fld"><label>产品编号</label><input id="f-code" placeholder="如 4714" inputmode="numeric"></div>
         <div class="fld"><label>产品类型</label>
@@ -301,8 +301,8 @@
         </div>
         <div class="fld"><label>动作</label>
           <div class="lseg" id="f-action">
-            <button data-a="out" class="on">出货（生产→）</button>
-            <button data-a="in">退回（→生产）</button>
+            <button data-a="out" class="on">测试（生产→）</button>
+            <button data-a="in">返回（→生产）</button>
           </div>
         </div>
         <div class="fld"><label>对方部门</label>
@@ -674,7 +674,7 @@ let flowRecs = flowLoad();
 function flowLoad(){ try{ return JSON.parse(localStorage.getItem(FLOW_KEY))||[]; }catch(e){ return []; } }
 function flowSave(){ localStorage.setItem(FLOW_KEY, JSON.stringify(flowRecs)); }
 const FTYPE_NAME = {crystal:'晶体/探头', laser:'激光器', room:'气室'};
-const FACT_NAME = {out:'出货', in:'退回'};
+const FACT_NAME = {out:'测试', in:'返回'};
 function fToday(){ const d=new Date(); const p=n=>String(n).padStart(2,'0'); return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate()); }
 function flowByDate(a,b){ return (a.date||'').localeCompare(b.date||'') || a.id-b.id; }
 
@@ -711,7 +711,7 @@ function flowBannerHtml(code){
   if(st.bal>1){ cls='bad'; txt='重号异常'; }
   else if(st.bal===1){ cls='warn'; txt='在'+st.loc; }
   let al='';
-  if(st.bal>1) al+='<div>同一编号有 '+st.bal+' 个产品在外（出货未退回），疑似重号 —— 请核对实物</div>';
+  if(st.bal>1) al+='<div>同一编号有 '+st.bal+' 个产品在外（测试未返回），疑似重号 —— 请核对实物</div>';
   if(st.dup.length) al+='<div class="w">有 '+st.dup.length+' 条记录与其它记录日期/动作/部门相同，可能重复录入</div>';
   let tl='';
   st.rs.forEach(r=>{
@@ -779,7 +779,7 @@ document.getElementById('btn-save').onclick=function(){
     note:document.getElementById('f-note').value.trim()};
   flowRecs.push(rec); flowSave();
   const after=flowState(code);
-  if(after.bal>1) fToast('已保存，但编号 '+code+' 有 '+after.bal+' 个在外未退回 → 疑似重号');
+  if(after.bal>1) fToast('已保存，但编号 '+code+' 有 '+after.bal+' 个在外未返回 → 疑似重号');
   else if(after.dup.includes(rec)) fToast('已保存，但该日期+动作+部门已有记录 → 可能重复');
   else fToast('已保存：'+FTYPE_NAME[formType]+' '+code+' '+FACT_NAME[formAction]);
   clearLForm(); renderRecent();
@@ -865,6 +865,9 @@ document.getElementById('import-file').addEventListener('change', function(e){
   rd.readAsText(f); e.target.value='';
 });
 
+document.getElementById('view-entry').addEventListener('keydown', function(e){
+  if(e.key==='Enter'){ e.preventDefault(); document.getElementById('btn-save').click(); }
+});
 document.getElementById('f-date').value=fToday();
 </script>
 </body>

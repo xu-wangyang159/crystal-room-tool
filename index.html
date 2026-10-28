@@ -201,49 +201,6 @@
     th, td { padding: 7px 6px; }
   }
 
-  /* ===== 流转台账整合样式 ===== */
-  .flow-banner { border-radius: 10px; padding: 13px 16px; margin-bottom: 14px; border: 1px solid; display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
-  .flow-banner.ok { background: rgba(46,204,143,.1); border-color: var(--ok); }
-  .flow-banner.warn { background: rgba(244,185,66,.12); border-color: var(--warn); }
-  .flow-banner.bad { background: rgba(239,91,91,.12); border-color: var(--bad); }
-  .flow-banner.none { background: var(--card); border-color: var(--line); }
-  .flow-banner .fb-loc { font-size: 16px; font-weight: 700; }
-  .flow-banner .fb-meta { color: var(--ink2); font-size: 12px; }
-  .flow-banner .fb-toggle { margin-left:auto; background:none; border:1px solid var(--line); color:var(--ink2); padding:5px 12px; border-radius:6px; cursor:pointer; font-size:12px; }
-  .flow-banner .fb-toggle:hover { border-color:var(--acc); color:var(--ink); }
-  .flow-alerts { width:100%; display:flex; flex-direction:column; gap:6px; }
-  .flow-alerts div { font-size:12px; padding:6px 10px; border-radius:6px; background:rgba(239,91,91,.15); border-left:3px solid var(--bad); }
-  .flow-alerts div.w { background:rgba(244,185,66,.15); border-left-color:var(--warn); }
-  .flow-tl { width:100%; margin-top:6px; position:relative; padding-left:22px; }
-  .flow-tl:before { content:""; position:absolute; left:6px; top:6px; bottom:6px; width:2px; background:var(--line); }
-  .flow-tl .i { position:relative; padding:0 0 12px 10px; }
-  .flow-tl .i:before { content:""; position:absolute; left:-19px; top:5px; width:11px; height:11px; border-radius:50%; background:var(--acc); border:2px solid var(--bg); }
-  .flow-tl .i.in:before { background:var(--ok); } .flow-tl .i.out:before { background:var(--warn); }
-  .flow-tl .ih { display:flex; gap:7px; align-items:center; flex-wrap:wrap; font-size:13px; }
-  .flow-tl .ib { font-size:12px; color:var(--ink2); margin-top:2px; }
-  .flow-tl .ib .pair { color:var(--acc); }
-  .ftag { display:inline-block; padding:1px 9px; border-radius:20px; font-size:11px; font-weight:600; }
-  .ftag.out { background:var(--warn); color:#08203a; } .ftag.in { background:var(--ok); color:#08203a; }
-  .lform { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:13px; }
-  .lform .fld { display:flex; flex-direction:column; gap:5px; }
-  .lform label { font-size:12px; color:var(--ink2); }
-  .lform input, .lform select { background:var(--card2); border:1px solid var(--line); color:var(--ink); padding:9px 11px; border-radius:7px; font-size:14px; font-family:inherit; width:100%; }
-  .lform input:focus, .lform select:focus { outline:none; border-color:var(--acc); }
-  .lseg { display:flex; border:1px solid var(--line); border-radius:7px; overflow:hidden; }
-  .lseg button { flex:1; background:var(--card2); border:0; color:var(--ink2); padding:9px; cursor:pointer; font-size:13px; font-family:inherit; }
-  .lseg button.on { background:var(--acc); color:#08203a; font-weight:600; }
-  .lseg button + button { border-left:1px solid var(--line); }
-  .lfull { grid-column:1/-1; }
-  .lbtn { background:var(--acc); border:0; color:#08203a; padding:11px 24px; border-radius:8px; font-size:14px; font-weight:600; font-family:inherit; cursor:pointer; }
-  .lbtn:hover { opacity:.9; }
-  .lbtn.ghost { background:var(--card2); border:1px solid var(--line); color:var(--ink); }
-  .fstat-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:11px; }
-  .fstat { background:var(--card2); border:1px solid var(--line); border-radius:8px; padding:13px; }
-  .fstat .n { font-size:22px; font-weight:700; }
-  .fstat .l { font-size:12px; color:var(--ink2); margin-top:2px; }
-  .fstat .n.bad { color:var(--bad); } .fstat .n.warn { color:var(--warn); } .fstat .n.ok { color:var(--ok); }
-  .ldel { background:none; border:0; color:var(--gray); cursor:pointer; font-size:11px; }
-  .ldel:hover { color:var(--bad); }
 </style>
 </head>
 <body>
@@ -273,8 +230,6 @@
   <div class="tabs" id="tabs">
     <button class="tab active" data-mode="crystal">查晶体</button>
     <button class="tab" data-mode="room">查气室</button>
-    <button class="tab" data-mode="entry">流转登记</button>
-    <button class="tab" data-mode="data">数据管理</button>
   </div>
 
   <div class="search">
@@ -284,64 +239,6 @@
   <div class="hint" id="hint">例：查晶体 <b>4717</b> → 晶体判定 + 所配气室（含 <b>8054</b>）及各判定依据；切到「查气室」输入 <b>8054</b> → 气室判定 + 使用它的晶体。</div>
 
   <div id="result"></div>
-
-  <!-- ===== 视图：流转登记 ===== -->
-  <div id="view-entry" style="display:none">
-    <div class="card">
-      <div class="res-head"><span class="res-type">登记出入记录</span>
-        <span style="color:var(--ink2);font-size:12px">出货 = 生产部 → 测试部/仓库；退回 = 测试部/仓库 → 生产部</span></div>
-      <div class="lform" style="margin-top:14px">
-        <div class="fld"><label>产品编号</label><input id="f-code" placeholder="如 4714" inputmode="numeric"></div>
-        <div class="fld"><label>产品类型</label>
-          <div class="lseg" id="f-type">
-            <button data-t="crystal" class="on">晶体/探头</button>
-            <button data-t="laser">激光器</button>
-            <button data-t="room">气室</button>
-          </div>
-        </div>
-        <div class="fld"><label>动作</label>
-          <div class="lseg" id="f-action">
-            <button data-a="out" class="on">出货（生产→）</button>
-            <button data-a="in">退回（→生产）</button>
-          </div>
-        </div>
-        <div class="fld"><label>对方部门</label>
-          <select id="f-dept"><option value="测试部">测试部</option><option value="仓库">仓库</option></select>
-        </div>
-        <div class="fld"><label>日期</label><input id="f-date" type="date"></div>
-        <div class="fld" id="f-pair-room"><label>配套气室编号</label><input id="f-room" placeholder="如 8054" inputmode="numeric"></div>
-        <div class="fld" id="f-pair-laser"><label>配套激光器编号</label><input id="f-laser" placeholder="如 2467" inputmode="numeric"></div>
-        <div class="fld lfull"><label>备注</label><input id="f-note" placeholder="经手人、数量、异常情况等（可选）"></div>
-      </div>
-      <div style="display:flex;gap:10px;margin-top:16px">
-        <button class="lbtn" id="btn-save">保存记录</button>
-        <button class="lbtn ghost" id="btn-clear">清空</button>
-      </div>
-    </div>
-    <div class="card">
-      <div class="res-head"><span class="res-type">最近登记</span>
-        <span style="color:var(--ink2);font-size:12px">最新 20 条</span></div>
-      <div id="recent" style="margin-top:12px"></div>
-    </div>
-  </div>
-
-  <!-- ===== 视图：数据管理 ===== -->
-  <div id="view-data" style="display:none">
-    <div class="card">
-      <div class="res-head"><span class="res-type">流转总览</span></div>
-      <div class="fstat-grid" id="fstats" style="margin-top:14px"></div>
-    </div>
-    <div class="card">
-      <div class="res-head"><span class="res-type">数据管理</span></div>
-      <p style="color:var(--ink2);font-size:13px;margin:12px 0">流转数据自动保存在本机浏览器。建议定期导出备份；换电脑或清理浏览器前务必先导出。</p>
-      <div style="display:flex;gap:10px;flex-wrap:wrap">
-        <button class="lbtn ghost" id="btn-export">导出 JSON 备份</button>
-        <button class="lbtn ghost" id="btn-import">导入 JSON</button>
-        <button class="lbtn ghost" id="btn-csv">导出 CSV 台账</button>
-        <input type="file" id="import-file" accept=".json" style="display:none">
-      </div>
-    </div>
-  </div>
 
   <footer>判定基于维修记录文本推断，最终结论以实物测试为准。</footer>
 </div>
@@ -424,22 +321,12 @@ document.getElementById('tabs').addEventListener('click', function(e) {
   mode = t.dataset.mode;
   document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
   t.classList.add('active');
-  const isQuery = (mode === 'crystal' || mode === 'room');
-  document.querySelector('.search').style.display = isQuery ? '' : 'none';
-  document.getElementById('hint').style.display = isQuery ? '' : 'none';
-  document.getElementById('result').style.display = isQuery ? '' : 'none';
-  document.getElementById('view-entry').style.display = mode === 'entry' ? '' : 'none';
-  document.getElementById('view-data').style.display = mode === 'data' ? '' : 'none';
-  if (isQuery) {
-    const inp = document.getElementById('q');
-    inp.placeholder = mode === 'crystal' ? '输入晶体编号后回车搜索，例如 4717' : '输入气室编号后回车搜索，例如 8054';
-    document.getElementById('hint').innerHTML = mode === 'crystal'
-      ? '例：查晶体 <b>4717</b> → 晶体判定 + 流转位置 + 所配气室（含 <b>8054</b>）'
-      : '例：查气室 <b>8054</b> 或 <b>西安7289</b> → 气室判定 + 流转位置 + 使用该气室的晶体（西安编号自动加前缀）';
-    document.getElementById('result').innerHTML = '';
-  }
-  if (mode === 'entry') renderRecent();
-  if (mode === 'data') renderFStats();
+  const inp = document.getElementById('q');
+  inp.placeholder = mode === 'crystal' ? '输入晶体编号后回车搜索，例如 4717' : '输入气室编号后回车搜索，例如 8054';
+  document.getElementById('hint').innerHTML = mode === 'crystal'
+    ? '例：查晶体 <b>4717</b> → 晶体判定 + 所配气室（含 <b>8054</b>）及各判定依据'
+    : '例：查气室 <b>8054</b> 或 <b>西安7289</b> → 气室判定 + 使用该气室的晶体及各自判定依据（西安编号自动加前缀显示）';
+  document.getElementById('result').innerHTML = '';
 });
 
 function doSearch() {
@@ -546,8 +433,7 @@ function queryCrystal(q) {
   }
 
   box.innerHTML =
-    flowBannerHtml(q)
-    + '<div class="card">'
+    '<div class="card">'
     + '<div class="res-head">'
     + '<span class="res-id">' + esc(q) + '</span>'
     + '<span class="res-type">晶体编号</span>'
@@ -625,8 +511,7 @@ function queryRoom(q) {
   });
 
   box.innerHTML =
-    flowBannerHtml(q)
-    + '<div class="card">'
+    '<div class="card">'
     + '<div class="res-head">'
     + '<span class="res-id">' + esc(roomLabel(q)) + '</span>'
     + '<span class="res-type">气室编号</span>'
@@ -668,207 +553,6 @@ function bindCrystalLinks() {
   });
 }
 
-/* ================= 流转台账（localStorage，与判定整合） ================= */
-const FLOW_KEY = 'flow_ledger_v1';
-let flowRecs = flowLoad();
-function flowLoad(){ try{ return JSON.parse(localStorage.getItem(FLOW_KEY))||[]; }catch(e){ return []; } }
-function flowSave(){ localStorage.setItem(FLOW_KEY, JSON.stringify(flowRecs)); }
-const FTYPE_NAME = {crystal:'晶体/探头', laser:'激光器', room:'气室'};
-const FACT_NAME = {out:'出货', in:'退回'};
-function fToday(){ const d=new Date(); const p=n=>String(n).padStart(2,'0'); return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate()); }
-function flowByDate(a,b){ return (a.date||'').localeCompare(b.date||'') || a.id-b.id; }
-
-function flowState(code){
-  const rs=flowRecs.filter(r=>r.code===code).sort(flowByDate);
-  let bal=0;
-  rs.forEach(r=>{ if(r.action==='out') bal++; else bal=Math.max(0,bal-1); });
-  const last=rs[rs.length-1]||null;
-  let loc='无记录';
-  if(last){ loc = last.action==='out' ? last.dept : '生产部'; }
-  const seen={}, dup=[];
-  rs.forEach(r=>{ const k=r.date+'|'+r.action+'|'+r.dept; if(seen[k]) dup.push(r); else seen[k]=1; });
-  return {rs,last,loc,bal,dup};
-}
-
-let ftoastTimer=null;
-function fToast(msg){
-  let t=document.getElementById('ftoast');
-  if(!t){ t=document.createElement('div'); t.id='ftoast';
-    t.style.cssText='position:fixed;left:50%;bottom:30px;transform:translateX(-50%);background:var(--card2);border:1px solid var(--acc);color:var(--ink);padding:11px 20px;border-radius:8px;opacity:0;transition:.25s;z-index:99;max-width:90vw';
-    document.body.appendChild(t); }
-  t.textContent=msg; t.style.opacity=1;
-  clearTimeout(ftoastTimer); ftoastTimer=setTimeout(()=>t.style.opacity=0,2600);
-}
-
-/* 流转状态条（查询结果顶部） */
-function flowBannerHtml(code){
-  const st=flowState(code);
-  if(!st.rs.length){
-    return '<div class="flow-banner none"><span class="fb-loc">流转：无记录</span>'+
-      '<span class="fb-meta">该编号还没有出入登记</span></div>';
-  }
-  let cls='ok', txt='在生产部';
-  if(st.bal>1){ cls='bad'; txt='重号异常'; }
-  else if(st.bal===1){ cls='warn'; txt='在'+st.loc; }
-  let al='';
-  if(st.bal>1) al+='<div>同一编号有 '+st.bal+' 个产品在外（出货未退回），疑似重号 —— 请核对实物</div>';
-  if(st.dup.length) al+='<div class="w">有 '+st.dup.length+' 条记录与其它记录日期/动作/部门相同，可能重复录入</div>';
-  let tl='';
-  st.rs.forEach(r=>{
-    const ar=r.action==='out'?'生产部 → '+r.dept:r.dept+' → 生产部';
-    let b='<div>'+esc(ar)+'</div>';
-    if(r.type==='crystal'&&(r.room||r.laser)) b+='<div class="pair">配套气室 '+esc(r.room||'—')+' ｜ 激光器 '+esc(r.laser||'—')+'</div>';
-    if(r.note) b+='<div>'+esc(r.note)+'</div>';
-    tl+='<div class="i '+r.action+'"><div class="ih"><span><b>'+esc(r.date)+'</b></span>'+
-      '<span class="ftag '+r.action+'">'+FACT_NAME[r.action]+'</span><span class="fb-meta">'+esc(r.dept)+'</span>'+
-      '<button class="ldel" data-fdel="'+r.id+'">删除</button></div><div class="ib">'+b+'</div></div>';
-  });
-  return '<div class="flow-banner '+cls+'">'+
-    '<span class="fb-loc">流转：'+esc(txt)+'</span>'+
-    '<span class="fb-meta">共 '+st.rs.length+' 条 · 最近 '+esc(st.last.date)+'</span>'+
-    '<button class="fb-toggle" onclick="flowToggle(this)">展开流转记录</button>'+
-    (al?'<div class="flow-alerts">'+al+'</div>':'')+
-    '<div class="flow-tl" style="display:none">'+tl+'</div></div>';
-}
-function flowToggle(btn){
-  const b=btn.closest('.flow-banner');
-  const tl=b.querySelector('.flow-tl');
-  const open=tl.style.display!=='none';
-  tl.style.display=open?'none':'';
-  btn.textContent=open?'展开流转记录':'收起流转记录';
-  if(!open){
-    b.querySelectorAll('[data-fdel]').forEach(x=>x.onclick=()=>{
-      if(confirm('确定删除这条流转记录？')){
-        flowRecs=flowRecs.filter(r=>r.id!=x.dataset.fdel); flowSave();
-        const code=document.getElementById('q').value.trim();
-        if(mode==='crystal') queryCrystal(code); else queryRoom(code);
-      }
-    });
-  }
-}
-
-/* 表单：类型/动作切换 */
-let formType='crystal', formAction='out';
-document.getElementById('f-type').addEventListener('click', function(e){
-  const b=e.target.closest('button'); if(!b) return;
-  formType=b.dataset.t;
-  [...e.currentTarget.children].forEach(x=>x.classList.toggle('on',x===b));
-  document.getElementById('f-pair-room').style.display=formType==='crystal'?'':'none';
-  document.getElementById('f-pair-laser').style.display=formType==='crystal'?'':'none';
-});
-document.getElementById('f-action').addEventListener('click', function(e){
-  const b=e.target.closest('button'); if(!b) return;
-  formAction=b.dataset.a;
-  [...e.currentTarget.children].forEach(x=>x.classList.toggle('on',x===b));
-});
-function clearLForm(){
-  ['f-code','f-room','f-laser','f-note'].forEach(i=>document.getElementById(i).value='');
-  document.getElementById('f-date').value=fToday();
-}
-document.getElementById('btn-clear').onclick=clearLForm;
-
-document.getElementById('btn-save').onclick=function(){
-  const code=String(document.getElementById('f-code').value||'').trim();
-  if(!code){ fToast('请填写产品编号'); return; }
-  const date=document.getElementById('f-date').value||fToday();
-  const rec={id:flowRecs.length?Math.max(...flowRecs.map(r=>r.id))+1:1,
-    code,type:formType,action:formAction,
-    dept:document.getElementById('f-dept').value,date,
-    room:String(document.getElementById('f-room').value||'').trim(),
-    laser:String(document.getElementById('f-laser').value||'').trim(),
-    note:document.getElementById('f-note').value.trim()};
-  flowRecs.push(rec); flowSave();
-  const after=flowState(code);
-  if(after.bal>1) fToast('已保存，但编号 '+code+' 有 '+after.bal+' 个在外未退回 → 疑似重号');
-  else if(after.dup.includes(rec)) fToast('已保存，但该日期+动作+部门已有记录 → 可能重复');
-  else fToast('已保存：'+FTYPE_NAME[formType]+' '+code+' '+FACT_NAME[formAction]);
-  clearLForm(); renderRecent();
-};
-
-function renderRecent(){
-  const box=document.getElementById('recent');
-  if(!box) return;
-  if(!flowRecs.length){ box.innerHTML='<div style="color:var(--gray);text-align:center;padding:24px">还没有记录，先在上面登记一条</div>'; return; }
-  const list=[...flowRecs].sort((a,b)=>b.id-a.id).slice(0,20);
-  let h='<table><tr><th>日期</th><th>编号</th><th>类型</th><th>动作</th><th>部门</th><th>配套/备注</th><th></th></tr>';
-  list.forEach(r=>{
-    let pair='';
-    if(r.type==='crystal'&&(r.room||r.laser)) pair='<span style="color:var(--acc)">配气室 '+(r.room||'—')+' / 激光器 '+(r.laser||'—')+'</span>';
-    if(r.note) pair+=(pair?'<br>':'')+esc(r.note);
-    h+='<tr><td>'+esc(r.date)+'</td><td><b>'+esc(r.code)+'</b></td><td>'+FTYPE_NAME[r.type]+'</td>'+
-      '<td><span class="ftag '+r.action+'">'+FACT_NAME[r.action]+'</span></td><td>'+esc(r.dept)+'</td>'+
-      '<td style="font-size:12px">'+pair+'</td>'+
-      '<td><button class="ldel" data-fdel="'+r.id+'">删除</button></td></tr>';
-  });
-  h+='</table>';
-  box.innerHTML=h;
-  box.querySelectorAll('[data-fdel]').forEach(b=>b.onclick=function(){
-    if(confirm('确定删除这条记录？')){
-      flowRecs=flowRecs.filter(r=>r.id!=this.dataset.fdel); flowSave(); renderRecent();
-    }
-  });
-}
-
-function renderFStats(){
-  const box=document.getElementById('fstats');
-  if(!box) return;
-  const codes=new Set(flowRecs.map(r=>r.code));
-  let inProd=0,outNow=0,dupCodes=0;
-  codes.forEach(c=>{ const st=flowState(c);
-    if(st.bal>1)dupCodes++; else if(st.bal===1)outNow++; else inProd++; });
-  const g=[['总记录数',flowRecs.length,''],['产品数',codes.size,''],
-    ['在生产部',inProd,'ok'],['在测试/仓库',outNow,'warn'],['重号异常',dupCodes,'bad']];
-  box.innerHTML=g.map(([l,n,c])=>'<div class="fstat"><div class="n '+c+'">'+n+'</div><div class="l">'+l+'</div></div>').join('');
-}
-
-function fDownload(name,content,type){
-  const blob=new Blob([content],{type:type||'application/octet-stream'});
-  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; a.click();
-  setTimeout(()=>URL.revokeObjectURL(a.href),2000);
-}
-document.getElementById('btn-export').onclick=function(){
-  fDownload('流转台账备份_'+fToday()+'.json', JSON.stringify(flowRecs,null,2));
-  fToast('已导出 JSON 备份');
-};
-document.getElementById('btn-csv').onclick=function(){
-  const head=['日期','编号','类型','动作','部门','配套气室','配套激光器','备注'];
-  const rows=[...flowRecs].sort(flowByDate).map(r=>[r.date,r.code,FTYPE_NAME[r.type],FACT_NAME[r.action],r.dept,r.room||'',r.laser||'',r.note||'']);
-  const csv='\uFEFF'+[head,...rows].map(row=>row.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\r\n');
-  fDownload('流转台账_'+fToday()+'.csv',csv,'text/csv');
-  fToast('已导出 CSV 台账');
-};
-document.getElementById('btn-import').onclick=function(){ document.getElementById('import-file').click(); };
-document.getElementById('import-file').addEventListener('change', function(e){
-  const f=e.target.files[0]; if(!f) return;
-  const rd=new FileReader();
-  rd.onload=function(){
-    try{
-      const data=JSON.parse(rd.result);
-      if(!Array.isArray(data)) throw new Error('bad');
-      if(confirm('导入将合并到现有记录（按编号+日期+动作+部门+备注去重），确定？')){
-        const exist=new Set(flowRecs.map(r=>r.code+'|'+r.date+'|'+r.action+'|'+r.dept+'|'+(r.note||'')));
-        let maxId=flowRecs.length?Math.max(...flowRecs.map(r=>r.id)):0, added=0;
-        data.forEach(r=>{
-          if(!r.code||!r.type) return;
-          const k=r.code+'|'+r.date+'|'+r.action+'|'+r.dept+'|'+(r.note||'');
-          if(exist.has(k)) return;
-          exist.add(k); maxId++;
-          flowRecs.push({id:maxId,code:r.code,type:r.type,action:r.action,dept:r.dept,
-            date:r.date||fToday(),room:r.room||'',laser:r.laser||'',note:r.note||''});
-          added++;
-        });
-        flowSave(); renderRecent(); renderFStats();
-        fToast('导入完成，新增 '+added+' 条');
-      }
-    }catch(err){ fToast('导入失败：文件格式不正确'); }
-  };
-  rd.readAsText(f); e.target.value='';
-});
-
-document.getElementById('view-entry').addEventListener('keydown', function(e){
-  if(e.key==='Enter'){ e.preventDefault(); document.getElementById('btn-save').click(); }
-});
-document.getElementById('f-date').value=fToday();
 </script>
 </body>
 </html>

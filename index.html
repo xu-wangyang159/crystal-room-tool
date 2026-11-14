@@ -103,6 +103,11 @@
     padding: 3px 10px; border-radius: 20px;
   }
   .rep-chip b { color: #ff4d4f; font-size: 15px; font-weight: 800; }
+  .rep-chip.plain { color: var(--ink2); background: rgba(147,165,196,.10); border-color: var(--line); }
+  .rep-chip.plain b { color: var(--ink); }
+  .card.paired { border-left: 3px solid var(--line); background: var(--bg2); }
+  .card.paired .res-id { color: var(--ink); }
+  .card.paired .res-type { color: var(--ink2); }
   .badge {
     padding: 6px 14px; border-radius: 8px; font-size: 14px; font-weight: 700;
     display: inline-flex; align-items: center; gap: 7px;
@@ -402,45 +407,15 @@ function gqInfoHtml(gq) {
   return '<div class="gq-info"><span class="gq-title">功率/光强' + tag + '</span>' + cells + '</div>';
 }
 
-function queryCrystal(q) {
+function crystalCard(q, chipHtml, isPaired) {
   const hit = CR.c[q];
-  const box = document.getElementById('result');
-  const rp = (CR.p && CR.p[q]) ? CR.p[q] : '';
-  const op = (CR.o && CR.o[q]) ? CR.o[q] : null;
-  let repText = '';
-  if (rp) {
-    if (op && op[0] === 'to') repText = '已换为 <b>' + esc(op[1]) + '</b> 号激光器';
-    else if (op && op[0] === 'from') repText = '由 <b>' + esc(op[1]) + '</b> 号换入';
-    else repText = '替换关联 <b>' + esc(rp) + '</b> 号激光器';
-  }
-  const repChip = rp
-    ? '<span class="rep-chip" title="来源《20261111-晶体替换表》：与该编号成对登记">' + repText + '</span>'
-    : '';
-  if (!hit) {
-    if (rp) {
-      box.innerHTML = '<div class="card"><div class="res-head">'
-        + '<span class="res-id">' + esc(q) + '</span>'
-        + '<span class="res-type">晶体编号</span>'
-        + repChip
-        + '</div>'
-        + '<div class="advice">该晶体编号在匹配记录中无维修数据，但在替换表中与 <b>' + esc(rp) + '</b> 号激光器成对登记。</div>'
-        + '<div class="advice"><a class="room-link" data-crystal="' + esc(rp) + '">→ 查看 ' + esc(rp) + ' 号激光器的记录</a></div>'
-        + '</div>';
-      bindCrystalLinks();
-      return;
-    }
-    box.innerHTML = '<div class="notfound">未找到晶体编号 <b>' + esc(q) + '</b>，请检查编号是否正确（编号为匹配记录中的探头编号）。</div>';
-    return;
-  }
+  if (!hit) return '';
   const judge = hit[0], recs = hit[1];
   const cls = badgeCls(judge);
-
-  // 统计该晶体的故障类型分布
   const typeCnt = {};
   recs.forEach(function(r) {
     (r[5] || []).forEach(function(t) { typeCnt[t] = (typeCnt[t] || 0) + 1; });
   });
-
   let rows = '';
   if (!recs.length) {
     rows = '<tr><td colspan="7" style="color:var(--ink2)">该晶体无气室更换记录</td></tr>';
@@ -461,13 +436,11 @@ function queryCrystal(q) {
         + '</tr>';
     });
   }
-
-  box.innerHTML =
-    '<div class="card">'
+  return '<div class="card' + (isPaired ? ' paired' : '') + '">'
     + '<div class="res-head">'
     + '<span class="res-id">' + esc(q) + '</span>'
-    + '<span class="res-type">晶体编号</span>'
-    + repChip
+    + '<span class="res-type">' + (isPaired ? '替换关联编号' : '晶体编号') + '</span>'
+    + (chipHtml || '')
     + '<span class="badge ' + cls + '"><span class="dot"></span>' + esc(judge || '未判定') + '</span>'
     + '</div>'
     + gqInfoHtml(hit[2])
@@ -478,7 +451,94 @@ function queryCrystal(q) {
     + '<div class="sec-title">所配气室明细</div>'
     + '<table><tr><th>#</th><th>气室编号</th><th>PD值</th><th>日期</th><th>更换原因</th><th>故障类型</th><th>气室判定</th></tr>' + rows + '</table>'
     + '</div>';
+}
+
+function roomCard(q, chipHtml, isPaired) {
+  const hit = CR.r[q];
+  if (!hit) return '';
+  const judge = hit[0], users = hit[1];
+  const cls = badgeCls(judge);
+  let n = 0;
+  let rows = '';
+  users.forEach(function(pid) {
+    const crecs = CR.c[pid] ? CR.c[pid][1] : [];
+    crecs.forEach(function(rec) {
+      if (normRoom(rec[0]) !== normRoom(q)) return;
+      n++;
+      const ttags = (rec[5] || []).map(function(t) {
+        return '<span class="mini-badge ' + miniBadgeCls(t) + '">' + esc(t) + '</span>';
+      }).join(' ') || '<span style="color:var(--gray)">—</span>';
+      rows += '<tr>'
+        + '<td>' + n + '</td>'
+        + '<td><a class="room-link" data-crystal="' + esc(pid) + '">' + esc(pid) + '</a></td>'
+        + '<td>' + (rec[1] ? esc(rec[1]) : '<span style="color:var(--gray)">—</span>') + '</td>'
+        + '<td class="reason">' + esc(rec[2] || '—') + '</td>'
+        + '<td class="reason">' + esc(rec[3] || '—') + '</td>'
+        + '<td>' + ttags + '</td>'
+        + '<td><span class="mini-badge ' + badgeCls(rec[4]) + '">' + esc(rec[4] || '未判定') + '</span></td>'
+        + '</tr>';
+    });
+  });
+  if (!n) {
+    rows = '<tr><td colspan="7" style="color:var(--ink2)">该气室暂无明细记录</td></tr>';
+  }
+  const userTxt = users.map(function(pid) {
+    const j = CR.c[pid] ? CR.c[pid][0] : '';
+    return '<a class="room-link" data-crystal="' + esc(pid) + '">' + esc(pid) + '</a>' + (j ? '（' + esc(j) + '）' : '');
+  }).join('、');
+  return '<div class="card' + (isPaired ? ' paired' : '') + '">'
+    + '<div class="res-head">'
+    + '<span class="res-id">' + esc(q) + '</span>'
+    + '<span class="res-type">' + (isPaired ? '替换关联编号 · 气室' : '气室编号') + '</span>'
+    + (chipHtml || '')
+    + '<span class="badge ' + cls + '"><span class="dot"></span>' + esc(judge || '未判定') + '</span>'
+    + '</div>'
+    + '<div class="advice">该编号在晶体库中没有记录，作为气室使用于：' + (userTxt || '—') + '</div>'
+    + '<div class="sec-title">气室明细（' + n + ' 条）</div>'
+    + '<table><tr><th>#</th><th>晶体编号</th><th>PD值</th><th>日期</th><th>更换原因</th><th>故障类型</th><th>气室判定</th></tr>' + rows + '</table>'
+    + '</div>';
+}
+
+function queryCrystal(q) {
+  const box = document.getElementById('result');
+  const hit = CR.c[q];
+  const rhit = CR.r[q];
+  const rp = (CR.p && CR.p[q]) ? CR.p[q] : '';
+  const op = (CR.o && CR.o[q]) ? CR.o[q] : null;
+  let repText = '';
+  if (rp) {
+    if (op && op[0] === 'to') repText = '已换为 <b>' + esc(op[1]) + '</b> 号激光器';
+    else if (op && op[0] === 'from') repText = '由 <b>' + esc(op[1]) + '</b> 号换入';
+    else repText = '替换关联 <b>' + esc(rp) + '</b> 号激光器';
+  }
+  const repChip = rp
+    ? '<span class="rep-chip" title="来源《20261111-晶体替换表》：与该编号成对登记">' + repText + '</span>'
+    : '';
+  let html = '';
+  if (hit) {
+    html += crystalCard(q, repChip, false);
+  } else if (rhit) {
+    html += roomCard(q, repChip, false);
+  } else if (rp) {
+    html = '<div class="card"><div class="res-head">'
+      + '<span class="res-id">' + esc(q) + '</span>'
+      + '<span class="res-type">晶体编号</span>'
+      + repChip
+      + '</div>'
+      + '<div class="advice">该编号在晶体库与气室库中均无维修记录，但在替换表中与 <b>' + esc(rp) + '</b> 号成对登记。</div></div>';
+  } else {
+    box.innerHTML = '<div class="notfound">未找到晶体编号 <b>' + esc(q) + '</b>，请检查编号是否正确（编号为匹配记录中的探头编号）。</div>';
+    return;
+  }
+  if (rp) {
+    const chip = '<span class="rep-chip plain" title="与 ' + esc(q) + ' 号成对登记">与 <b>' + esc(q) + '</b> 成对</span>';
+    if (CR.c[rp]) html += crystalCard(rp, chip, true);
+    else if (CR.r[rp]) html += roomCard(rp, chip, true);
+    else html += '<div class="card paired"><div class="advice">替换关联编号 <b>' + esc(rp) + '</b> 在晶体库与气室库中均无维修记录。</div></div>';
+  }
+  box.innerHTML = html;
   bindRoomLinks();
+  bindCrystalLinks();
 }
 
 function queryRoom(q) {

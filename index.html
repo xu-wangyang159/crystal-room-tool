@@ -217,6 +217,10 @@
     border-radius: 5px; padding: 2px 8px; flex-shrink: 0;
   }
   .text-judge b { color: var(--ink); font-weight: 700; }
+  .src-tag {
+    font-size: 10.5px; font-weight: 800; color: #0e1726; background: #4cc3ff;
+    border-radius: 5px; padding: 2px 6px; margin-right: 4px; white-space: nowrap;
+  }
 
   .sec-title {
     font-size: 13px; color: var(--ink2); letter-spacing: 2px;
@@ -472,6 +476,55 @@ function roomTestSection(id) {
     + rows + '</table>';
 }
 
+// 测定表中有、维修库（气室.xlsx）中没有的气室，按气室聚合成一行
+function xbExtraRooms(q) {
+  var x = xbP(q);
+  if (!x) return [];
+  var crRooms = {};
+  if (CR.c[q]) CR.c[q][1].forEach(function(r) { crRooms[normRoom(r[0])] = 1; });
+  var agg = {};
+  x[2].forEach(function(rec) {
+    var rm = rec[1];
+    if (!rm) return;
+    var key = normRoom(rm);
+    if (crRooms[key]) return;
+    if (!agg[key]) agg[key] = {room: rm, typ: rec[2], minDate: rec[0], proc: '', result: ''};
+    var a = agg[key];
+    if (rec[0] < a.minDate) a.minDate = rec[0];
+    if (!a.proc && rec[7]) a.proc = rec[7];
+    if (!a.result && rec[6]) a.result = rec[6];
+  });
+  var out = [];
+  for (var k in agg) out.push(agg[k]);
+  out.sort(function(a, b) {
+    if (a.minDate === b.minDate) return 0;
+    return a.minDate < b.minDate ? -1 : 1;
+  });
+  return out;
+}
+
+// 测定表中使用该气室、但维修库 users 中没有的探头，按探头聚合成一行
+function xbExtraProbes(q, knownUsers) {
+  var rowsData = roomTestRows(q);
+  var agg = {};
+  rowsData.forEach(function(o) {
+    var pid = o.pid, rec = o.rec;
+    if (knownUsers[pid]) return;
+    if (!agg[pid]) agg[pid] = {pid: pid, typ: rec[2], minDate: rec[0], proc: '', result: ''};
+    var a = agg[pid];
+    if (rec[0] < a.minDate) a.minDate = rec[0];
+    if (!a.proc && rec[7]) a.proc = rec[7];
+    if (!a.result && rec[6]) a.result = rec[6];
+  });
+  var out = [];
+  for (var k in agg) out.push(agg[k]);
+  out.sort(function(a, b) {
+    if (a.minDate === b.minDate) return 0;
+    return a.minDate < b.minDate ? -1 : 1;
+  });
+  return out;
+}
+
 // 探头标签依据（按类型逐条；b=[typ,mx,n1,lab,nrec]）
 function probeLabelReason(id) {
   var x = xbP(id);
@@ -709,24 +762,45 @@ function crystalCard(q, chipHtml, isPaired) {
     (r[5] || []).forEach(function(t) { typeCnt[t] = (typeCnt[t] || 0) + 1; });
   });
   let rows = '';
-  if (!recs.length) {
+  let rowNo = 0;
+  recs.forEach(function(r) {
+    const rj = r[4];
+    const ttags = (r[5] || []).map(function(t) {
+      return '<span class="mini-badge ' + miniBadgeCls(t) + '">' + esc(t) + '</span>';
+    }).join(' ') || '<span style="color:var(--gray)">—</span>';
+    rowNo++;
+    rows += '<tr>'
+      + '<td>' + rowNo + '</td>'
+      + '<td><a class="room-link" data-room="' + esc(normRoom(r[0])) + '">' + esc(roomLabel(r[0])) + '</a></td>'
+      + '<td>' + (r[1] ? esc(r[1]) : '<span style="color:var(--gray)">—</span>') + '</td>'
+      + '<td class="reason">' + esc(r[2] || '—') + '</td>'
+      + '<td class="reason">' + esc(r[3] || '—') + '</td>'
+      + '<td>' + ttags + '</td>'
+      + '<td><span class="mini-badge ' + badgeCls(rj) + '">' + esc(rj || '未判定') + '</span></td>'
+      + '</tr>';
+  });
+  const extras = xbExtraRooms(q);
+  extras.forEach(function(a) {
+    var labHtml = '<span style="color:var(--gray)">—</span>';
+    var rentry = xbR(normRoom(a.room));
+    if (rentry) {
+      rentry.forEach(function(b) {
+        if (b[0] === a.typ) labHtml = '<span class="mini-badge ' + RL_CLS[b[3]] + '">' + RL_NAME[b[3]] + '</span>';
+      });
+    }
+    rowNo++;
+    rows += '<tr>'
+      + '<td>' + rowNo + '</td>'
+      + '<td><span class="src-tag">测定表补录</span><a class="room-link" data-room="' + esc(normRoom(a.room)) + '">' + esc(roomLabel(a.room)) + '</a></td>'
+      + '<td><span style="color:var(--gray)">—</span></td>'
+      + '<td>' + fmtDate(a.minDate) + '</td>'
+      + '<td class="reason">' + esc(a.proc || a.result || '—') + '</td>'
+      + '<td><span style="color:var(--gray)">—</span></td>'
+      + '<td>' + labHtml + '</td>'
+      + '</tr>';
+  });
+  if (!rowNo) {
     rows = '<tr><td colspan="7" style="color:var(--ink2)">该晶体无气室更换记录</td></tr>';
-  } else {
-    recs.forEach(function(r, i) {
-      const rj = r[4];
-      const ttags = (r[5] || []).map(function(t) {
-        return '<span class="mini-badge ' + miniBadgeCls(t) + '">' + esc(t) + '</span>';
-      }).join(' ') || '<span style="color:var(--gray)">—</span>';
-      rows += '<tr>'
-        + '<td>' + (i+1) + '</td>'
-        + '<td><a class="room-link" data-room="' + esc(normRoom(r[0])) + '">' + esc(roomLabel(r[0])) + '</a></td>'
-        + '<td>' + (r[1] ? esc(r[1]) : '<span style="color:var(--gray)">—</span>') + '</td>'
-        + '<td class="reason">' + esc(r[2] || '—') + '</td>'
-        + '<td class="reason">' + esc(r[3] || '—') + '</td>'
-        + '<td>' + ttags + '</td>'
-        + '<td><span class="mini-badge ' + badgeCls(rj) + '">' + esc(rj || '未判定') + '</span></td>'
-        + '</tr>';
-    });
   }
   return '<div class="card' + (isPaired ? ' paired' : '') + '">'
     + '<div class="res-head">'
@@ -742,6 +816,7 @@ function crystalCard(q, chipHtml, isPaired) {
     + '</div>'
     + '<div class="sec-title">所配气室明细</div>'
     + '<table><tr><th>#</th><th>气室编号</th><th>PD值</th><th>日期</th><th>更换原因</th><th>故障类型</th><th>气室判定</th></tr>' + rows + '</table>'
+    + (extras.length ? '<div class="basis-desc" style="margin-top:8px">带「测定表补录」的气室：维修库（气室.xlsx）尚未登记，但《探头测定记录表》已有测试记录；PD值与故障类型待维修库补录，气室判定取测定表同类型标签。</div>' : '')
     + probeTestSection(q)
     + '</div>';
 }
@@ -771,13 +846,38 @@ function roomCard(q, chipHtml, isPaired) {
         + '</tr>';
     });
   });
+  var knownMap = {};
+  users.forEach(function(pid) { knownMap[pid] = 1; });
+  const extraProbes = xbExtraProbes(q, knownMap);
+  extraProbes.forEach(function(a) {
+    var labHtml = '<span style="color:var(--gray)">—</span>';
+    var rentry = xbR(q);
+    if (rentry) {
+      rentry.forEach(function(b) {
+        if (b[0] === a.typ) labHtml = '<span class="mini-badge ' + RL_CLS[b[3]] + '">' + RL_NAME[b[3]] + '</span>';
+      });
+    }
+    n++;
+    rows += '<tr>'
+      + '<td>' + n + '</td>'
+      + '<td><span class="src-tag">测定表补录</span><a class="room-link" data-crystal="' + esc(a.pid) + '">' + esc(a.pid) + '</a></td>'
+      + '<td><span style="color:var(--gray)">—</span></td>'
+      + '<td>' + fmtDate(a.minDate) + '</td>'
+      + '<td class="reason">' + esc(a.proc || a.result || '—') + '</td>'
+      + '<td><span style="color:var(--gray)">—</span></td>'
+      + '<td>' + labHtml + '</td>'
+      + '</tr>';
+  });
   if (!n) {
     rows = '<tr><td colspan="7" style="color:var(--ink2)">该气室暂无明细记录</td></tr>';
   }
   const userTxt = users.map(function(pid) {
     const j = CR.c[pid] ? CR.c[pid][0] : '';
     return '<a class="room-link" data-crystal="' + esc(pid) + '">' + esc(pid) + '</a>' + (j ? '（' + esc(j) + '）' : '');
-  }).join('、');
+  }).join('、')
+    + (extraProbes.length ? (users.length ? '、' : '') + extraProbes.map(function(a) {
+        return '<a class="room-link" data-crystal="' + esc(a.pid) + '">' + esc(a.pid) + '</a>';
+      }).join('、') : '');
   return '<div class="card' + (isPaired ? ' paired' : '') + '">'
     + '<div class="res-head">'
     + '<span class="res-id">' + esc(q) + '</span>'
@@ -790,6 +890,7 @@ function roomCard(q, chipHtml, isPaired) {
     + '<div class="advice">该编号在晶体库中没有记录，作为气室使用于：' + (userTxt || '—') + '</div>'
     + '<div class="sec-title">气室明细（' + n + ' 条）</div>'
     + '<table><tr><th>#</th><th>晶体编号</th><th>PD值</th><th>日期</th><th>更换原因</th><th>故障类型</th><th>气室判定</th></tr>' + rows + '</table>'
+    + (extraProbes.length ? '<div class="basis-desc" style="margin-top:8px">带「测定表补录」的探头：维修库尚未登记，但《探头测定记录表》已有该气室的测试记录；PD值与故障类型待维修库补录，气室判定取测定表同类型标签。</div>' : '')
     + roomTestSection(q)
     + '</div>';
 }
@@ -928,6 +1029,25 @@ function queryRoom(q) {
       + '<td><span class="mini-badge ' + badgeCls(rec.cj) + '">' + esc(rec.cj || '未判定') + '</span></td>'
       + '</tr>';
   });
+  const roomExtras = xbExtraProbes(q, seen);
+  roomExtras.forEach(function(a) {
+    var pjHtml = '<span style="color:var(--gray)">—</span>';
+    var pentry = xbP(a.pid);
+    if (pentry) {
+      pentry[1].forEach(function(b) {
+        if (b[0] === a.typ) pjHtml = '<span class="mini-badge ' + PL_CLS[b[3]] + '">' + PL_NAME[b[3]] + '</span>';
+      });
+    }
+    rows += '<tr>'
+      + '<td><span class="src-tag">测定表补录</span><a class="room-link" data-crystal="' + esc(a.pid) + '">' + esc(a.pid) + '</a></td>'
+      + '<td><span style="color:var(--gray)">—</span></td>'
+      + '<td>' + fmtDate(a.minDate) + '</td>'
+      + '<td class="reason">' + esc(a.proc || a.result || '—') + '</td>'
+      + '<td><span style="color:var(--gray)">—</span></td>'
+      + '<td><span style="color:var(--gray)">—</span></td>'
+      + '<td>' + pjHtml + '</td>'
+      + '</tr>';
+  });
 
   box.innerHTML =
     '<div class="card">'
@@ -935,7 +1055,7 @@ function queryRoom(q) {
     + '<span class="res-id">' + esc(roomLabel(q)) + '</span>'
     + '<span class="res-type">气室编号</span>'
     + roomHeadChips(xbR(q))
-    + '<span style="color:var(--ink2);font-size:13px">全表使用 ' + users.length + ' 次</span>'
+    + '<span style="color:var(--ink2);font-size:13px">全表使用 ' + (users.length + roomExtras.length) + ' 次（测定表补录 ' + roomExtras.length + ' 次）</span>'
     + '</div>'
     + roomLabelReason(q)
     + '<div class="advice">' + adviceText(judge, 'room') + '</div>'
@@ -945,6 +1065,7 @@ function queryRoom(q) {
     + '</div>'
     + '<div class="sec-title">使用该气室的晶体明细</div>'
     + '<table><tr><th>晶体编号</th><th>PD值</th><th>日期</th><th>更换原因</th><th>故障类型</th><th>晶体故障分布</th><th>晶体判定</th></tr>' + rows + '</table>'
+    + (roomExtras.length ? '<div class="basis-desc" style="margin-top:8px">带「测定表补录」的探头：维修库尚未登记，但《探头测定记录表》已有该气室的测试记录；PD值、故障类型与故障分布待维修库补录，晶体判定取测定表同类型标签。</div>' : '')
     + roomTestSection(q)
     + '</div>';
   bindCrystalLinks();
